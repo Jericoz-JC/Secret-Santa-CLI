@@ -2,7 +2,6 @@
 
 import sys
 import os
-import time
 
 # Force UTF-8 encoding on Windows for emoji support
 if sys.platform == "win32":
