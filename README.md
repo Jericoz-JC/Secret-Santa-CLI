@@ -23,6 +23,7 @@ A beautiful command-line tool for organizing Secret Santa gift exchanges.
 ## ✨ Features
 
 - 🎁 Random matching with cluster exclusions (family members don't match)
+- 👶 **Kids-only matching** - Kids only get matched with other kids
 - 📧 Email notifications via Brevo (free tier: 300 emails/day)
 - 👨‍👧 Parent CC option for children's assignments
 - 🎨 Beautiful festive terminal UI
@@ -53,10 +54,13 @@ santa
 ## 🚀 Quick Start
 
 ```bash
-# Add participants
+# Add adult participants
 santa add "Alice" "alice@example.com"
 santa add "Bob" "bob@example.com"
-santa add "Timmy" "timmy@example.com" --parent-email "parent@example.com"
+
+# Add kids (they only match with other kids!)
+santa add "Timmy" "timmy@example.com" --kid --parent-email "parent@example.com"
+santa add "Sally" "sally@example.com" --kid --parent-email "parent@example.com"
 
 # Create exclusion groups (prevent matching)
 santa cluster create "Smith Family"
@@ -82,6 +86,8 @@ santa send             # send for real
 |---------|-------------|
 | `santa` | Show welcome screen |
 | `santa add "name" "email"` | Add participant |
+| `santa add "name" "email" --kid` | Add a kid (kids match only with kids) |
+| `santa add ... --parent-email "email"` | CC parent on assignment |
 | `santa list` | View all participants |
 | `santa remove "name"` | Remove participant |
 | `santa cluster create "name"` | Create exclusion group |

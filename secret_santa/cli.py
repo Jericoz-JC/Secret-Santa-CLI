@@ -141,17 +141,21 @@ def cli(ctx):
 @click.argument("name")
 @click.argument("email")
 @click.option("--parent-email", "-p", help="Parent email to CC on assignment notification")
-def add_participant(name: str, email: str, parent_email: str = None):
+@click.option("--kid", "-k", is_flag=True, help="Mark as a kid (kids only match with other kids)")
+def add_participant(name: str, email: str, parent_email: str = None, kid: bool = False):
     """Add a participant to the Secret Santa exchange."""
     try:
         participant = Participant(
             name=name,
             email=email,
-            parent_email=parent_email
+            parent_email=parent_email,
+            is_kid=kid
         )
         storage.add_participant(participant)
         
         msg = f"✅ Added [bold green]{name}[/] ({email})"
+        if kid:
+            msg += " [magenta][KID][/]"
         if parent_email:
             msg += f" with parent CC: {parent_email}"
         console.print(msg)
@@ -167,13 +171,14 @@ def list_participants():
     participants = storage.list_participants()
     
     if not participants:
-        console.print("[yellow]No participants yet.[/] Add some with: santa add <name> <email>")
+        console.print("[yellow]No participants yet.[/] Add some with: santa add \"name\" \"email\"")
         return
     
     table = Table(title="🎅 Participants", show_header=True, header_style="bold magenta")
     table.add_column("#", style="dim", width=4)
     table.add_column("Name", style="cyan")
     table.add_column("Email", style="green")
+    table.add_column("Kid", style="magenta", justify="center")
     table.add_column("Parent Email", style="yellow")
     table.add_column("Cluster", style="blue")
     
@@ -185,6 +190,7 @@ def list_participants():
             str(i),
             p.name,
             p.email,
+            "✓" if p.is_kid else "-",
             p.parent_email or "-",
             cluster_name
         )

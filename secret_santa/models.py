@@ -12,6 +12,7 @@ class Participant(BaseModel):
     email: EmailStr
     parent_email: Optional[EmailStr] = None
     cluster_id: Optional[UUID] = None
+    is_kid: bool = False  # Kids are matched only with other kids
 
 
 class Cluster(BaseModel):
