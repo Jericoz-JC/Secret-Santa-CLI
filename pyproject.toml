@@ -1,0 +1,48 @@
+[project]
+name = "secret-santa-cli"
+version = "1.0.0"
+description = "A CLI tool for managing Secret Santa gift exchanges with cluster-based exclusions and email notifications"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Chris", email = "chrisgems5@gmail.com"}
+]
+keywords = ["secret-santa", "christmas", "gift-exchange", "cli", "email"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Communications :: Email",
+    "Topic :: Games/Entertainment",
+]
+dependencies = [
+    "click>=8.1.0",
+    "pydantic>=2.0.0",
+    "email-validator>=2.0.0",
+    "rich>=13.0.0",
+    "sib-api-v3-sdk>=7.6.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Jericoz-JC/Secret-Santa-CLI"
+Repository = "https://github.com/Jericoz-JC/Secret-Santa-CLI"
+Issues = "https://github.com/Jericoz-JC/Secret-Santa-CLI/issues"
+
+[project.scripts]
+santa = "secret_santa.cli:cli"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
