@@ -188,11 +188,11 @@ class TestAssignmentData:
             assert "@test.com" in a.receiver_email
 
 
-class TestKidsMatching:
-    """Tests for kids-only matching feature."""
+class TestSeparateKidsMatching:
+    """Tests for kids-only matching feature (when separate_kids=True)."""
     
     def test_kids_match_only_with_kids(self):
-        """Kids should only be matched with other kids."""
+        """Kids should only be matched with other kids when separate_kids=True."""
         # 3 kids and 3 adults
         kid1 = Participant(name="Kid1", email="kid1@test.com", is_kid=True)
         kid2 = Participant(name="Kid2", email="kid2@test.com", is_kid=True)
@@ -205,7 +205,7 @@ class TestKidsMatching:
         
         # Run multiple times since it's random
         for _ in range(50):
-            assignments = create_assignments(storage)
+            assignments = create_assignments(storage, separate_kids=True)
             
             kid_ids = {kid1.id, kid2.id, kid3.id}
             adult_ids = {adult1.id, adult2.id, adult3.id}
@@ -219,7 +219,7 @@ class TestKidsMatching:
                     assert a.receiver_id in adult_ids, f"Adult {a.giver_name} matched with kid!"
     
     def test_adults_match_only_with_adults(self):
-        """Adults should only be matched with other adults."""
+        """Adults should only be matched with other adults when separate_kids=True."""
         kid1 = Participant(name="Kid1", email="kid1@test.com", is_kid=True)
         kid2 = Participant(name="Kid2", email="kid2@test.com", is_kid=True)
         adult1 = Participant(name="Adult1", email="adult1@test.com", is_kid=False)
@@ -228,7 +228,7 @@ class TestKidsMatching:
         storage = MockStorage([kid1, kid2, adult1, adult2])
         
         for _ in range(30):
-            assignments = create_assignments(storage)
+            assignments = create_assignments(storage, separate_kids=True)
             
             for a in assignments:
                 giver_is_kid = a.giver_id in {kid1.id, kid2.id}
@@ -236,8 +236,8 @@ class TestKidsMatching:
                 # They should match: both kids or both adults
                 assert giver_is_kid == receiver_is_kid
     
-    def test_single_kid_fails(self):
-        """Only 1 kid should raise an error since they can't match with anyone."""
+    def test_single_kid_fails_with_separate_kids(self):
+        """Only 1 kid should raise an error when separate_kids=True."""
         kid = Participant(name="LonelyKid", email="kid@test.com", is_kid=True)
         adult1 = Participant(name="Adult1", email="adult1@test.com", is_kid=False)
         adult2 = Participant(name="Adult2", email="adult2@test.com", is_kid=False)
@@ -245,41 +245,10 @@ class TestKidsMatching:
         storage = MockStorage([kid, adult1, adult2])
         
         with pytest.raises(MatcherError, match="Only 1 kid"):
-            create_assignments(storage)
+            create_assignments(storage, separate_kids=True)
     
-    def test_all_kids_no_adults(self):
-        """All participants being kids should work fine."""
-        kids = [
-            Participant(name=f"Kid{i}", email=f"kid{i}@test.com", is_kid=True)
-            for i in range(5)
-        ]
-        
-        storage = MockStorage(kids)
-        
-        for _ in range(30):
-            assignments = create_assignments(storage)
-            assert len(assignments) == 5
-            # Everyone should give and receive
-            givers = {a.giver_id for a in assignments}
-            receivers = {a.receiver_id for a in assignments}
-            assert givers == {k.id for k in kids}
-            assert receivers == {k.id for k in kids}
-    
-    def test_all_adults_no_kids(self):
-        """All participants being adults should work fine."""
-        adults = [
-            Participant(name=f"Adult{i}", email=f"adult{i}@test.com", is_kid=False)
-            for i in range(5)
-        ]
-        
-        storage = MockStorage(adults)
-        
-        for _ in range(30):
-            assignments = create_assignments(storage)
-            assert len(assignments) == 5
-    
-    def test_two_kids_two_adults(self):
-        """Minimum viable scenario with both groups."""
+    def test_two_kids_two_adults_separated(self):
+        """Minimum viable scenario with both groups separated."""
         kid1 = Participant(name="Kid1", email="kid1@test.com", is_kid=True)
         kid2 = Participant(name="Kid2", email="kid2@test.com", is_kid=True)
         adult1 = Participant(name="Adult1", email="adult1@test.com", is_kid=False)
@@ -288,7 +257,7 @@ class TestKidsMatching:
         storage = MockStorage([kid1, kid2, adult1, adult2])
         
         for _ in range(30):
-            assignments = create_assignments(storage)
+            assignments = create_assignments(storage, separate_kids=True)
             
             # Kids should match: kid1 -> kid2, kid2 -> kid1
             # Adults should match: adult1 -> adult2, adult2 -> adult1
@@ -304,7 +273,7 @@ class TestKidsMatching:
                     assert a.giver_id != a.receiver_id
     
     def test_kids_with_cluster_exclusion(self):
-        """Kids in the same cluster should still not match."""
+        """Kids in the same cluster should still not match when separate_kids=True."""
         cluster = Cluster(name="Siblings")
         
         kid1 = Participant(name="Kid1", email="kid1@test.com", is_kid=True, cluster_id=cluster.id)
@@ -317,7 +286,7 @@ class TestKidsMatching:
         storage = MockStorage([kid1, kid2, kid3, kid4], [cluster])
         
         for _ in range(50):
-            assignments = create_assignments(storage)
+            assignments = create_assignments(storage, separate_kids=True)
             
             for a in assignments:
                 # Siblings should never get each other
@@ -325,7 +294,7 @@ class TestKidsMatching:
                     assert a.receiver_id not in [kid1.id, kid2.id]
     
     def test_kids_cluster_too_large_fails(self):
-        """If kid cluster has more than half of kids, it should fail."""
+        """If kid cluster has more than half of kids, it should fail when separate_kids=True."""
         cluster = Cluster(name="Big Sibling Group")
         
         # 3 kids in cluster, 4 kids total - impossible
@@ -343,19 +312,7 @@ class TestKidsMatching:
         storage = MockStorage([kid1, kid2, kid3, kid4, adult1, adult2], [cluster])
         
         with pytest.raises(MatcherError, match="less than half"):
-            create_assignments(storage)
-    
-    def test_zero_kids_works(self):
-        """Having no kids at all should work (all adults)."""
-        adults = [
-            Participant(name=f"Adult{i}", email=f"adult{i}@test.com", is_kid=False)
-            for i in range(4)
-        ]
-        
-        storage = MockStorage(adults)
-        assignments = create_assignments(storage)
-        
-        assert len(assignments) == 4
+            create_assignments(storage, separate_kids=True)
     
     def test_kids_with_parent_email(self):
         """Kids with parent email should have it in their assignment."""
@@ -364,7 +321,7 @@ class TestKidsMatching:
         
         storage = MockStorage([kid1, kid2])
         
-        assignments = create_assignments(storage)
+        assignments = create_assignments(storage, separate_kids=True)
         
         for a in assignments:
             # Parent email should be preserved
@@ -372,4 +329,109 @@ class TestKidsMatching:
                 assert a.parent_email == "parent1@test.com"
             elif a.giver_id == kid2.id:
                 assert a.parent_email == "parent2@test.com"
+
+
+class TestRandomMatching:
+    """Tests for default random matching (separate_kids=False)."""
+    
+    def test_default_allows_kid_adult_matching(self):
+        """By default, kids can be matched with adults."""
+        kid1 = Participant(name="Kid1", email="kid1@test.com", is_kid=True)
+        adult1 = Participant(name="Adult1", email="adult1@test.com", is_kid=False)
+        
+        storage = MockStorage([kid1, adult1])
+        
+        # Should work fine - kid and adult can match each other
+        assignments = create_assignments(storage)  # separate_kids=False by default
+        
+        assert len(assignments) == 2
+        # Verify one gives to other
+        givers = {a.giver_id for a in assignments}
+        receivers = {a.receiver_id for a in assignments}
+        assert givers == {kid1.id, adult1.id}
+        assert receivers == {kid1.id, adult1.id}
+    
+    def test_single_kid_works_in_random_mode(self):
+        """Single kid should work fine without separate_kids."""
+        kid = Participant(name="Kid1", email="kid@test.com", is_kid=True)
+        adult1 = Participant(name="Adult1", email="adult1@test.com", is_kid=False)
+        adult2 = Participant(name="Adult2", email="adult2@test.com", is_kid=False)
+        
+        storage = MockStorage([kid, adult1, adult2])
+        
+        # Should work - no separation enforced
+        assignments = create_assignments(storage)  # separate_kids=False by default
+        
+        assert len(assignments) == 3
+    
+    def test_mixed_group_can_cross_match(self):
+        """Kids and adults can be matched with each other in random mode."""
+        kid1 = Participant(name="Kid1", email="kid1@test.com", is_kid=True)
+        kid2 = Participant(name="Kid2", email="kid2@test.com", is_kid=True)
+        adult1 = Participant(name="Adult1", email="adult1@test.com", is_kid=False)
+        adult2 = Participant(name="Adult2", email="adult2@test.com", is_kid=False)
+        
+        storage = MockStorage([kid1, kid2, adult1, adult2])
+        
+        # Run many times and check that cross-matching CAN happen
+        cross_match_found = False
+        for _ in range(100):
+            assignments = create_assignments(storage)  # separate_kids=False by default
+            
+            for a in assignments:
+                giver_is_kid = a.giver_id in {kid1.id, kid2.id}
+                receiver_is_kid = a.receiver_id in {kid1.id, kid2.id}
+                if giver_is_kid != receiver_is_kid:
+                    cross_match_found = True
+                    break
+            if cross_match_found:
+                break
+        
+        assert cross_match_found, "Cross-matching should be possible in random mode"
+    
+    def test_all_kids_works_in_random_mode(self):
+        """All kids should still work in random mode."""
+        kids = [
+            Participant(name=f"Kid{i}", email=f"kid{i}@test.com", is_kid=True)
+            for i in range(4)
+        ]
+        
+        storage = MockStorage(kids)
+        
+        assignments = create_assignments(storage)
+        assert len(assignments) == 4
+    
+    def test_all_adults_works_in_random_mode(self):
+        """All adults should still work in random mode."""
+        adults = [
+            Participant(name=f"Adult{i}", email=f"adult{i}@test.com", is_kid=False)
+            for i in range(4)
+        ]
+        
+        storage = MockStorage(adults)
+        
+        assignments = create_assignments(storage)
+        assert len(assignments) == 4
+    
+    def test_cluster_exclusion_still_works_in_random_mode(self):
+        """Cluster exclusions should work regardless of separate_kids setting."""
+        cluster = Cluster(name="Family")
+        
+        kid1 = Participant(name="Kid1", email="kid1@test.com", is_kid=True, cluster_id=cluster.id)
+        adult1 = Participant(name="Adult1", email="adult1@test.com", is_kid=False, cluster_id=cluster.id)
+        kid2 = Participant(name="Kid2", email="kid2@test.com", is_kid=True)
+        adult2 = Participant(name="Adult2", email="adult2@test.com", is_kid=False)
+        
+        cluster.member_ids = [kid1.id, adult1.id]
+        
+        storage = MockStorage([kid1, adult1, kid2, adult2], [cluster])
+        
+        for _ in range(50):
+            assignments = create_assignments(storage)
+            
+            for a in assignments:
+                # Family members (kid1 and adult1) should not match each other
+                if a.giver_id in [kid1.id, adult1.id]:
+                    assert a.receiver_id not in [kid1.id, adult1.id]
+
 

@@ -279,7 +279,8 @@ def list_clusters():
 
 @cli.command("assign")
 @click.option("--force", "-f", is_flag=True, help="Overwrite existing assignments")
-def assign(force: bool):
+@click.option("--separate-kids", "-s", is_flag=True, help="Kids only match with other kids (default: random)")
+def assign(force: bool, separate_kids: bool):
     """Generate random Secret Santa assignments."""
     existing = storage.get_assignments()
     
@@ -289,12 +290,13 @@ def assign(force: bool):
         return
     
     try:
-        with console.status("[bold green]Generating assignments..."):
-            assignments = create_assignments(storage)
+        mode_msg = "[magenta]Kids match kids only[/]" if separate_kids else "[cyan]Random matching[/]"
+        with console.status(f"[bold green]Generating assignments... ({mode_msg})"):
+            assignments = create_assignments(storage, separate_kids=separate_kids)
         
         storage.save_assignments(assignments)
         
-        console.print("\n[bold green]🎉 Assignments generated![/]\n")
+        console.print(f"\n[bold green]🎉 Assignments generated![/] ({mode_msg})\n")
         
         table = Table(show_header=True, header_style="bold magenta")
         table.add_column("Giver", style="cyan")

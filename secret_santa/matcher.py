@@ -12,19 +12,23 @@ class MatcherError(Exception):
     pass
 
 
-def create_assignments(storage: Storage, max_attempts: int = 1000) -> list[Assignment]:
+def create_assignments(
+    storage: Storage,
+    max_attempts: int = 1000,
+    separate_kids: bool = False
+) -> list[Assignment]:
     """
-    Create random Secret Santa assignments respecting cluster and kid rules.
+    Create random Secret Santa assignments respecting cluster rules.
     
     Algorithm:
-    1. Separate kids and adults
-    2. Match kids only with other kids, adults only with adults
-    3. For each group, shuffle and assign respecting cluster rules
-    4. Use backtracking if we get stuck
+    1. If separate_kids is True, match kids only with other kids
+    2. For each person, find valid receivers (not self, not same cluster)
+    3. Use backtracking if we get stuck
     
     Args:
         storage: Storage instance to get participants and clusters
         max_attempts: Maximum shuffle attempts before giving up
+        separate_kids: If True, kids only match with kids, adults with adults
     
     Returns:
         List of Assignment objects
@@ -37,17 +41,6 @@ def create_assignments(storage: Storage, max_attempts: int = 1000) -> list[Assig
     if len(participants) < 2:
         raise MatcherError("Need at least 2 participants for Secret Santa!")
     
-    # Separate kids and adults
-    kids = [p for p in participants if p.is_kid]
-    adults = [p for p in participants if not p.is_kid]
-    
-    # Validate kid group
-    if len(kids) == 1:
-        raise MatcherError(
-            "Only 1 kid found! Kids can only be matched with other kids. "
-            "Add more kids or remove the --kid flag."
-        )
-    
     # Build cluster membership map
     cluster_map: dict[UUID, UUID | None] = {}
     for p in participants:
@@ -58,19 +51,34 @@ def create_assignments(storage: Storage, max_attempts: int = 1000) -> list[Assig
     for p in participants:
         kid_map[p.id] = p.is_kid
     
-    # Check if matchmaking is possible for each group
-    _validate_cluster_sizes(kids, cluster_map, "kids")
-    _validate_cluster_sizes(adults, cluster_map, "adults")
+    # If separating kids, validate kid group sizes
+    if separate_kids:
+        kids = [p for p in participants if p.is_kid]
+        adults = [p for p in participants if not p.is_kid]
+        
+        # Validate kid group
+        if len(kids) == 1:
+            raise MatcherError(
+                "Only 1 kid found! With --separate-kids, kids can only be matched with other kids. "
+                "Add more kids or don't use --separate-kids."
+            )
+        
+        # Check if matchmaking is possible for each group
+        _validate_cluster_sizes(kids, cluster_map, "kids")
+        _validate_cluster_sizes(adults, cluster_map, "adults")
+    else:
+        # Without separation, validate all participants together
+        _validate_cluster_sizes(participants, cluster_map, "participants")
     
     # Try to find valid assignments
     for attempt in range(max_attempts):
-        result = _try_assign(participants, cluster_map, kid_map)
+        result = _try_assign(participants, cluster_map, kid_map, separate_kids)
         if result is not None:
             return result
     
     raise MatcherError(
         f"Could not find valid assignments after {max_attempts} attempts. "
-        "This may happen with complex cluster configurations or kid/adult group sizes."
+        "This may happen with complex cluster configurations."
     )
 
 
@@ -100,7 +108,8 @@ def _validate_cluster_sizes(
 def _try_assign(
     participants: list[Participant],
     cluster_map: dict[UUID, UUID | None],
-    kid_map: dict[UUID, bool]
+    kid_map: dict[UUID, bool],
+    separate_kids: bool
 ) -> list[Assignment] | None:
     """
     Attempt to create valid assignments using randomized approach.
@@ -124,7 +133,7 @@ def _try_assign(
             if r.id not in used_receivers
             and r.id != giver.id  # Can't give to self
             and not _same_cluster(giver.id, r.id, cluster_map)  # Can't give to cluster member
-            and kid_map.get(r.id, False) == giver_is_kid  # Kids match kids, adults match adults
+            and (not separate_kids or kid_map.get(r.id, False) == giver_is_kid)  # Kids match kids only if separate_kids
         ]
         
         if not valid_receivers:
@@ -158,4 +167,5 @@ def _same_cluster(id1: UUID, id2: UUID, cluster_map: dict[UUID, UUID | None]) ->
         return False
     
     return c1 == c2
+
 
