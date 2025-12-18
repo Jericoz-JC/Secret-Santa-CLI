@@ -143,7 +143,10 @@ def cli(ctx):
 @click.option("--parent-email", "-p", help="Parent email to CC on assignment notification")
 @click.option("--kid", "-k", is_flag=True, help="Mark as a kid (kids only match with other kids)")
 def add_participant(name: str, email: str, parent_email: str = None, kid: bool = False):
-    """Add a participant to the Secret Santa exchange."""
+    """Add a NEW participant (person) to the exchange.
+    
+    Example: santa add "John" "john@email.com"
+    """
     try:
         participant = Participant(
             name=name,
@@ -216,14 +219,20 @@ def remove_participant(name: str):
 
 @cli.group("cluster")
 def cluster_group():
-    """Manage clusters (groups who shouldn't match)."""
+    """Manage exclusion clusters (family groups who shouldn't match).
+    
+    Use 'cluster create' to make a group, then 'cluster add' to put people in it.
+    """
     pass
 
 
 @cluster_group.command("create")
 @click.argument("name")
 def create_cluster(name: str):
-    """Create a new cluster."""
+    """Create a new exclusion cluster (e.g. 'Smith Family').
+    
+    Example: santa cluster create "Smith Family"
+    """
     try:
         cluster = Cluster(name=name)
         storage.create_cluster(cluster)
@@ -237,7 +246,12 @@ def create_cluster(name: str):
 @click.argument("cluster_name")
 @click.argument("participant_name")
 def add_to_cluster(cluster_name: str, participant_name: str):
-    """Add a participant to a cluster."""
+    """Add an EXISTING participant to a cluster.
+    
+    Note: The person must already exist (use 'santa add' first).
+    
+    Example: santa cluster add "Smith Family" "John"
+    """
     try:
         storage.add_to_cluster(cluster_name, participant_name)
         console.print(f"✅ Added [bold cyan]{participant_name}[/] to cluster [bold blue]{cluster_name}[/]")
