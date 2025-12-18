@@ -27,45 +27,31 @@ from .email import send_all_assignments, EmailError
 console = Console()
 storage = Storage()
 
-# ASCII Santa Art
+# ASCII Santa Art (cleaner version)
 SANTA_ART = """
-[white]       *    *  *[/]
-[white]    *   [red]_█_[/][white]   *[/]
-[white]  *    [red]_███_[/]    *[/]
-[white]      [red]_█████_[/][/]
-[white]     [red]███[/][white]█[/][red]███[/][/]
-[white]    [red]███████[/][white]█[/][red]█[/][/]
-[red]   ▄█████████▄[/]
-[red]  ████[/][white]●[/][red]███[/][white]●[/][red]████[/]
-[red]  █████████████[/]
-[red]   ▀█[/][white]▄▄███▄▄[/][red]█▀[/]
-[white]      ███████[/]
-[red]     ▄███████▄[/]
-[red]    █████[/][white]█[/][red]█████[/]
-[white]   ═══════════════[/]
+[white]        *    *  *[/]
+[white]     *         *[/]
+[red]        ███████[/]
+[white]       █████████[/]
+[red]      ███████████[/]
+[white]     █[/][red]██[/][white]█████[/][red]██[/][white]█[/]
+[white]     █[/][blue]◉[/][white]█████[/][blue]◉[/][white]█[/]
+[white]      █████████[/]
+[white]       ██[/][red]███[/][white]██[/]
+[red]      ▄█████████▄[/]
+[red]     ███████████[/][white]█[/][red]█[/]
+[white]    ═══════════════[/]
 """
 
 TITLE_ART = """
 [bold red]╔═══════════════════════════════════════════════════════╗[/]
-[bold red]║[/] [white]███████╗███████╗ ██████╗██████╗ ███████╗████████╗[/]   [bold red]║[/]
-[bold red]║[/] [white]██╔════╝██╔════╝██╔════╝██╔══██╗██╔════╝╚══██╔══╝[/]   [bold red]║[/]
-[bold red]║[/] [white]███████╗█████╗  ██║     ██████╔╝█████╗     ██║[/]      [bold red]║[/]
-[bold red]║[/] [white]╚════██║██╔══╝  ██║     ██╔══██╗██╔══╝     ██║[/]      [bold red]║[/]
-[bold red]║[/] [white]███████║███████╗╚██████╗██║  ██║███████╗   ██║[/]      [bold red]║[/]
-[bold red]║[/] [white]╚══════╝╚══════╝ ╚═════╝╚═╝  ╚═╝╚══════╝   ╚═╝[/]      [bold red]║[/]
-[bold red]║[/]                                                       [bold red]║[/]
-[bold red]║[/]    [red]███████╗ █████╗ ███╗   ██╗████████╗ █████╗[/]        [bold red]║[/]
-[bold red]║[/]    [red]██╔════╝██╔══██╗████╗  ██║╚══██╔══╝██╔══██╗[/]       [bold red]║[/]
-[bold red]║[/]    [red]███████╗███████║██╔██╗ ██║   ██║   ███████║[/]       [bold red]║[/]
-[bold red]║[/]    [red]╚════██║██╔══██║██║╚██╗██║   ██║   ██╔══██║[/]       [bold red]║[/]
-[bold red]║[/]    [red]███████║██║  ██║██║ ╚████║   ██║   ██║  ██║[/]       [bold red]║[/]
-[bold red]║[/]    [red]╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝[/]       [bold red]║[/]
+[bold red]║[/]   [white on red] SECRET SANTA CLI [/]   [green]🎄[/] [white]Gift Exchange Manager[/] [green]🎄[/]   [bold red]║[/]
 [bold red]╚═══════════════════════════════════════════════════════╝[/]
 """
 
 
 def show_welcome():
-    """Display the welcome screen with Santa animation."""
+    """Display the welcome screen with Santa art and navigation."""
     console.clear()
     
     # Show title
@@ -78,17 +64,35 @@ def show_welcome():
     # Show status dashboard
     show_dashboard()
     
-    # Show commands
+    # Show categorized commands
     console.print()
+    commands_text = """[bold white]👤 PEOPLE[/]
+  [cyan]santa add[/] [dim]"Name" "email"[/]          Add a person
+  [cyan]santa add[/] [dim]"Name" "email" --kid[/]    Add a kid (use with --separate-kids)
+  [cyan]santa list[/]                        View all participants
+  [cyan]santa remove[/] [dim]"Name"[/]               Remove someone
+
+[bold white]👨‍👩‍👧‍👦 FAMILY GROUPS[/] (prevent matching within group)
+  [cyan]santa cluster create[/] [dim]"Family"[/]     Create a group
+  [cyan]santa cluster add[/] [dim]"Family" "Name"[/]  Add person to group
+  [cyan]santa cluster list[/]                 View all groups
+  [cyan]santa cluster kick[/] [dim]"Family" "Name"[/] Remove from group
+  [cyan]santa cluster remove[/] [dim]"Family"[/]     Delete entire group
+
+[bold white]🎁 MATCHING & SENDING[/]
+  [cyan]santa assign[/]                       Generate random matches
+  [cyan]santa assign --separate-kids[/]       Kids match kids only
+  [cyan]santa send --dry-run[/]               Preview emails
+  [cyan]santa send[/]                         Send all emails
+
+[bold white]⚙️ OTHER[/]
+  [cyan]santa config --show[/]                View email settings
+  [cyan]santa clear[/]                        Delete all data
+  [cyan]santa --help[/]                       Full command reference"""
+    
     console.print(Panel(
-        "[bold white]Quick Commands:[/]\n\n"
-        "  [cyan]santa add[/] [dim]\"Name\" \"email@example.com\"[/]  - Add participant\n"
-        "  [cyan]santa list[/]                             - View all participants\n"
-        "  [cyan]santa cluster create[/] [dim]\"Family Name\"[/]    - Create exclusion group\n"
-        "  [cyan]santa assign[/]                           - Generate random matches\n"
-        "  [cyan]santa send[/]                             - Email everyone\n"
-        "  [cyan]santa --help[/]                           - See all commands",
-        title="[bold red]🎄 Commands 🎄[/]",
+        commands_text,
+        title="[bold red]🎄 Quick Reference 🎄[/]",
         border_style="red",
         box=box.DOUBLE
     ))
@@ -266,7 +270,7 @@ def list_clusters():
     clusters = storage.list_clusters()
     
     if not clusters:
-        console.print("[yellow]No clusters yet.[/] Create one with: santa cluster create <name>")
+        console.print("[yellow]No clusters yet.[/] Create one with: santa cluster create \"Family Name\"")
         return
     
     for cluster in clusters:
@@ -276,7 +280,7 @@ def list_clusters():
             if p:
                 members.append(p.name)
         
-        member_text = ", ".join(members) if members else "[dim]No members[/]"
+        member_text = ", ".join(members) if members else "[dim]No members yet - use: santa cluster add \"" + cluster.name + "\" \"Name\"[/]"
         
         panel = Panel(
             member_text,
@@ -285,6 +289,37 @@ def list_clusters():
             border_style="blue"
         )
         console.print(panel)
+
+
+@cluster_group.command("remove")
+@click.argument("cluster_name")
+@click.confirmation_option(prompt="Are you sure you want to delete this cluster?")
+def remove_cluster(cluster_name: str):
+    """Delete an entire cluster (members stay in the exchange).
+    
+    Example: santa cluster remove "Smith Family"
+    """
+    if storage.remove_cluster(cluster_name):
+        console.print(f"✅ Removed cluster [bold red]{cluster_name}[/]")
+    else:
+        console.print(f"[red]Error:[/] Cluster '{cluster_name}' not found")
+        raise SystemExit(1)
+
+
+@cluster_group.command("kick")
+@click.argument("cluster_name")
+@click.argument("participant_name")
+def remove_from_cluster(cluster_name: str, participant_name: str):
+    """Remove a person from a cluster (they stay in the exchange).
+    
+    Example: santa cluster kick "Smith Family" "John"
+    """
+    try:
+        storage.remove_from_cluster(cluster_name, participant_name)
+        console.print(f"✅ Removed [bold cyan]{participant_name}[/] from cluster [bold blue]{cluster_name}[/]")
+    except ValueError as e:
+        console.print(f"[red]Error:[/] {e}")
+        raise SystemExit(1)
 
 
 # ============================================================================

@@ -156,6 +156,39 @@ class Storage:
         participant.cluster_id = cluster.id
         self.save()
 
+    def remove_from_cluster(self, cluster_name: str, participant_name: str) -> None:
+        """Remove a participant from a cluster."""
+        data = self.load()
+        cluster = self.get_cluster_by_name(cluster_name)
+        participant = self.get_participant_by_name(participant_name)
+
+        if cluster is None:
+            raise ValueError(f"Cluster '{cluster_name}' not found")
+        if participant is None:
+            raise ValueError(f"Participant '{participant_name}' not found")
+        if participant.id not in cluster.member_ids:
+            raise ValueError(f"'{participant_name}' is not in cluster '{cluster_name}'")
+
+        cluster.member_ids.remove(participant.id)
+        participant.cluster_id = None
+        self.save()
+
+    def remove_cluster(self, name: str) -> bool:
+        """Remove a cluster by name and clear participant references."""
+        data = self.load()
+        cluster = self.get_cluster_by_name(name)
+        if cluster is None:
+            return False
+        
+        # Clear cluster_id from all members
+        for p in data.participants:
+            if p.cluster_id == cluster.id:
+                p.cluster_id = None
+        
+        data.clusters = [c for c in data.clusters if c.id != cluster.id]
+        self.save()
+        return True
+
     def list_clusters(self) -> list[Cluster]:
         """Get all clusters."""
         return self.load().clusters

@@ -1,36 +1,25 @@
 # 🎅 Secret Santa CLI
 
-A beautiful command-line tool for organizing Secret Santa gift exchanges.
+A beautiful command-line tool for organizing Secret Santa gift exchanges with family exclusions.
 
 ```
 ╔═══════════════════════════════════════════════════════╗
-║ ███████╗███████╗ ██████╗██████╗ ███████╗████████╗   ║
-║ ██╔════╝██╔════╝██╔════╝██╔══██╗██╔════╝╚══██╔══╝   ║
-║ ███████╗█████╗  ██║     ██████╔╝█████╗     ██║      ║
-║ ╚════██║██╔══╝  ██║     ██╔══██╗██╔══╝     ██║      ║
-║ ███████║███████╗╚██████╗██║  ██║███████╗   ██║      ║
-║ ╚══════╝╚══════╝ ╚═════╝╚═╝  ╚═╝╚══════╝   ╚═╝      ║
-║                                                       ║
-║    ███████╗ █████╗ ███╗   ██╗████████╗ █████╗        ║
-║    ██╔════╝██╔══██╗████╗  ██║╚══██╔══╝██╔══██╗       ║
-║    ███████╗███████║██╔██╗ ██║   ██║   ███████║       ║
-║    ╚════██║██╔══██║██║╚██╗██║   ██║   ██╔══██║       ║
-║    ███████║██║  ██║██║ ╚████║   ██║   ██║  ██║       ║
-║    ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝       ║
+║   SECRET SANTA CLI   🎄 Gift Exchange Manager 🎄      ║
 ╚═══════════════════════════════════════════════════════╝
 ```
 
 ## ✨ Features
 
-- 🎁 Random matching with cluster exclusions (family members don't match)
-- 👶 **Optional kids-only matching** - Use `--separate-kids` so kids only match with kids
-- 📧 Email notifications via Brevo (free tier: 300 emails/day)
-- 👨‍👧 Parent CC option for children's assignments
-- 🎨 Beautiful festive terminal UI
+- 🎁 **Random matching** with cluster exclusions (family members don't match)
+- 👶 **Kids-only matching** - Optional `--separate-kids` so kids only match kids
+- 👨‍👩‍👧‍👦 **Family groups** - Prevent matching within families
+- 📧 **Email notifications** via Brevo (free tier: 300 emails/day)
+- 👨‍👧 **Parent CC** - Copy parents on kids' assignments
+- 🎨 **Festive terminal UI** with status dashboard
 
 ---
 
-## 📦 One-Click Install
+## 📦 Install
 
 ### Windows
 ```powershell
@@ -42,65 +31,80 @@ git clone https://github.com/Jericoz-JC/Secret-Santa-CLI.git && cd Secret-Santa-
 git clone https://github.com/Jericoz-JC/Secret-Santa-CLI.git && cd Secret-Santa-CLI && pip3 install -e .
 ```
 
-Then run:
-```bash
-santa
-```
+Then run: `santa`
 
-> **Note:** On Windows, run `$env:PYTHONUTF8=1` first for emoji support.
+> **Windows tip:** Run `$env:PYTHONUTF8=1` first for emoji support.
 
 ---
 
 ## 🚀 Quick Start
 
 ```bash
-# Add adult participants
+# 1. Add participants
 santa add "Alice" "alice@example.com"
 santa add "Bob" "bob@example.com"
-
-# Add kids (they only match with other kids!)
 santa add "Timmy" "timmy@example.com" --kid --parent-email "parent@example.com"
-santa add "Sally" "sally@example.com" --kid --parent-email "parent@example.com"
 
-# Create exclusion groups (prevent matching)
+# 2. Create family groups (they won't match each other)
 santa cluster create "Smith Family"
 santa cluster add "Smith Family" "Alice"
 santa cluster add "Smith Family" "Bob"
 
-# Generate random assignments
-santa assign
+# 3. Generate matches
+santa assign                  # Random matching
+santa assign --separate-kids  # Kids only match kids
 
-# Configure email (get free API key at brevo.com)
+# 4. Configure email (brevo.com for free API key)
 santa config --api-key "YOUR_KEY" --sender-email "your@email.com"
 
-# Send emails
-santa send --dry-run   # preview first
-santa send             # send for real
+# 5. Send emails
+santa send --dry-run   # Preview first
+santa send             # Send for real
 ```
 
 ---
 
-## 📖 Commands
+## 📖 All Commands
 
+### 👤 People
+| Command | Description |
+|---------|-------------|
+| `santa add "name" "email"` | Add a participant |
+| `santa add ... --kid` | Mark as a kid |
+| `santa add ... --parent-email "email"` | CC parent on assignment |
+| `santa list` | View all participants |
+| `santa remove "name"` | Remove someone |
+
+### 👨‍👩‍👧‍👦 Family Groups
+| Command | Description |
+|---------|-------------|
+| `santa cluster create "name"` | Create exclusion group |
+| `santa cluster add "group" "name"` | Add person to group |
+| `santa cluster list` | View all groups |
+| `santa cluster kick "group" "name"` | Remove person from group |
+| `santa cluster remove "name"` | Delete entire group |
+
+### 🎁 Matching & Email
+| Command | Description |
+|---------|-------------|
+| `santa assign` | Generate random matches |
+| `santa assign --separate-kids` | Kids only match with kids |
+| `santa send --dry-run` | Preview emails |
+| `santa send` | Send all emails |
+| `santa config --api-key "KEY"` | Set Brevo API key |
+| `santa config --sender-email "email"` | Set sender email |
+| `santa config --show` | View current config |
+
+### ⚙️ Other
 | Command | Description |
 |---------|-------------|
 | `santa` | Show welcome screen |
-| `santa add "name" "email"` | Add participant |
-| `santa add "name" "email" --kid` | Mark as a kid |
-| `santa add ... --parent-email "email"` | CC parent on assignment |
-| `santa list` | View all participants |
-| `santa remove "name"` | Remove participant |
-| `santa cluster create "name"` | Create exclusion group |
-| `santa cluster add "group" "name"` | Add to group |
-| `santa cluster list` | View groups |
-| `santa assign` | Generate random matches |
-| `santa assign --separate-kids` | Kids only match with kids |
-| `santa send` | Send emails |
-| `santa config --show` | View config |
 | `santa clear` | Delete all data |
+| `santa --help` | Full command reference |
 
 ---
 
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE)
+
