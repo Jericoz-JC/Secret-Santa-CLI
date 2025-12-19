@@ -33,6 +33,7 @@ class Assignment(BaseModel):
     parent_email: Optional[EmailStr] = None
     email_sent: bool = False
     verification_code: str = ""  # 4-char code for participant to verify their match
+    is_kid: bool = False  # Whether giver is a kid (parent receives email with child-specific content)
 
 
 class Config(BaseModel):

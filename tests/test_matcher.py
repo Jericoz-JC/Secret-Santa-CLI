@@ -532,3 +532,143 @@ class TestAssignmentHasVerificationCode:
         for a in assignments:
             expected = generate_verification_code(a.giver_id, a.receiver_id)
             assert a.verification_code == expected
+
+
+class TestClusterNoIntraMatching:
+    """Explicit stress tests that cluster members NEVER match each other."""
+    
+    def test_no_match_within_cluster_stress(self):
+        """Run 100 iterations to verify cluster exclusion never fails."""
+        cluster = Cluster(name="Family")
+        
+        # 4 family members, 4 non-family
+        family_members = [
+            Participant(name=f"Family{i}", email=f"fam{i}@test.com", cluster_id=cluster.id)
+            for i in range(4)
+        ]
+        others = [
+            Participant(name=f"Other{i}", email=f"other{i}@test.com")
+            for i in range(4)
+        ]
+        
+        cluster.member_ids = [p.id for p in family_members]
+        storage = MockStorage(family_members + others, [cluster])
+        
+        family_ids = {p.id for p in family_members}
+        
+        for iteration in range(100):
+            assignments = create_assignments(storage)
+            
+            for a in assignments:
+                if a.giver_id in family_ids:
+                    assert a.receiver_id not in family_ids, (
+                        f"Iteration {iteration}: Family member {a.giver_name} "
+                        f"was matched with family member (receiver_id in family cluster)"
+                    )
+    
+    def test_large_cluster_exclusion(self):
+        """Test with larger clusters to ensure exclusion works at scale."""
+        cluster1 = Cluster(name="Big Family 1")
+        cluster2 = Cluster(name="Big Family 2")
+        
+        # 5 members in each cluster, 10 independent participants
+        family1 = [
+            Participant(name=f"Fam1_{i}", email=f"fam1_{i}@test.com", cluster_id=cluster1.id)
+            for i in range(5)
+        ]
+        family2 = [
+            Participant(name=f"Fam2_{i}", email=f"fam2_{i}@test.com", cluster_id=cluster2.id)
+            for i in range(5)
+        ]
+        independents = [
+            Participant(name=f"Ind_{i}", email=f"ind_{i}@test.com")
+            for i in range(10)
+        ]
+        
+        cluster1.member_ids = [p.id for p in family1]
+        cluster2.member_ids = [p.id for p in family2]
+        
+        all_participants = family1 + family2 + independents
+        storage = MockStorage(all_participants, [cluster1, cluster2])
+        
+        fam1_ids = {p.id for p in family1}
+        fam2_ids = {p.id for p in family2}
+        
+        for _ in range(50):
+            assignments = create_assignments(storage)
+            
+            for a in assignments:
+                if a.giver_id in fam1_ids:
+                    assert a.receiver_id not in fam1_ids, "Family 1 member matched with Family 1"
+                if a.giver_id in fam2_ids:
+                    assert a.receiver_id not in fam2_ids, "Family 2 member matched with Family 2"
+    
+    def test_cluster_exclusion_with_kids_separated(self):
+        """Cluster exclusion should still work when kids are separated."""
+        cluster = Cluster(name="Family")
+        
+        # 2 kids in family, 2 adults in family, 2 kids outside, 2 adults outside
+        family_kids = [
+            Participant(name=f"FamKid{i}", email=f"famkid{i}@test.com", cluster_id=cluster.id, is_kid=True)
+            for i in range(2)
+        ]
+        family_adults = [
+            Participant(name=f"FamAdult{i}", email=f"famadult{i}@test.com", cluster_id=cluster.id, is_kid=False)
+            for i in range(2)
+        ]
+        other_kids = [
+            Participant(name=f"OtherKid{i}", email=f"otherkid{i}@test.com", is_kid=True)
+            for i in range(2)
+        ]
+        other_adults = [
+            Participant(name=f"OtherAdult{i}", email=f"otheradult{i}@test.com", is_kid=False)
+            for i in range(2)
+        ]
+        
+        cluster.member_ids = [p.id for p in family_kids + family_adults]
+        
+        all_participants = family_kids + family_adults + other_kids + other_adults
+        storage = MockStorage(all_participants, [cluster])
+        
+        family_ids = {p.id for p in family_kids + family_adults}
+        
+        for _ in range(50):
+            assignments = create_assignments(storage, separate_kids=True)
+            
+            for a in assignments:
+                if a.giver_id in family_ids:
+                    assert a.receiver_id not in family_ids, (
+                        f"Family member {a.giver_name} matched with family member"
+                    )
+
+
+class TestAssignmentKidFlag:
+    """Tests that Assignment correctly gets is_kid flag from giver."""
+    
+    def test_kid_assignment_has_is_kid_true(self):
+        """Assignments for kids should have is_kid=True."""
+        kid = Participant(name="Tommy", email="tommy@test.com", is_kid=True)
+        adult = Participant(name="Alice", email="alice@test.com", is_kid=False)
+        
+        storage = MockStorage([kid, adult])
+        assignments = create_assignments(storage)
+        
+        for a in assignments:
+            if a.giver_name == "Tommy":
+                assert a.is_kid is True
+            else:
+                assert a.is_kid is False
+    
+    def test_adult_assignment_has_is_kid_false(self):
+        """Assignments for adults should have is_kid=False."""
+        adults = [
+            Participant(name=f"Adult{i}", email=f"adult{i}@test.com", is_kid=False)
+            for i in range(3)
+        ]
+        
+        storage = MockStorage(adults)
+        assignments = create_assignments(storage)
+        
+        for a in assignments:
+            assert a.is_kid is False
+

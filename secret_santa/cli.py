@@ -82,14 +82,15 @@ def show_welcome():
     console.print()
     commands_text = """[bold white]👤 PEOPLE[/]
   [cyan]santa add[/] [dim]"Name" "email"[/]          Add a person
-  [cyan]santa add[/] [dim]"Name" "email" --kid[/]    Add a kid (use with --separate-kids)
+  [cyan]santa add[/] [dim]... --kid[/]               Add a kid (parent's email, use --separate-kids)
+  [cyan]santa add[/] [dim]... --cluster "Family"[/]  Add and assign to cluster in one step
   [cyan]santa list[/]                        View all participants
   [cyan]santa remove[/] [dim]"Name"[/]               Remove someone
 
 [bold white]👨‍👩‍👧‍👦 FAMILY GROUPS[/] (prevent matching within group)
+  [cyan]santa clusters[/]                    Quick view all groups
   [cyan]santa cluster create[/] [dim]"Family"[/]     Create a group
   [cyan]santa cluster add[/] [dim]"Family" "Name"[/]  Add person to group
-  [cyan]santa cluster list[/]                 View all groups
   [cyan]santa cluster kick[/] [dim]"Family" "Name"[/] Remove from group
   [cyan]santa cluster remove[/] [dim]"Family"[/]     Delete entire group
 
@@ -159,11 +160,15 @@ def cli(ctx):
 @click.argument("name")
 @click.argument("email")
 @click.option("--parent-email", "-p", help="Parent email to CC on assignment notification")
-@click.option("--kid", "-k", is_flag=True, help="Mark as a kid (kids only match with other kids)")
-def add_participant(name: str, email: str, parent_email: str = None, kid: bool = False):
+@click.option("--kid", "-k", is_flag=True, help="Mark as kid (email goes to parent, shows child's assignment)")
+@click.option("--cluster", "-c", "cluster_name", help="Add to cluster (creates if needed)")
+def add_participant(name: str, email: str, parent_email: str = None, kid: bool = False, cluster_name: str = None):
     """Add a NEW participant (person) to the exchange.
     
-    Example: santa add "John" "john@email.com"
+    Examples:
+        santa add "John" "john@email.com"
+        santa add "Tommy" "parent@email.com" --kid
+        santa add "Alice" "alice@email.com" --cluster "Smith Family"
     """
     try:
         participant = Participant(
@@ -180,6 +185,17 @@ def add_participant(name: str, email: str, parent_email: str = None, kid: bool =
         if parent_email:
             msg += f" with parent CC: {parent_email}"
         console.print(msg)
+        
+        # Handle --cluster option: create cluster if needed, then add participant
+        if cluster_name:
+            existing_cluster = storage.get_cluster_by_name(cluster_name)
+            if not existing_cluster:
+                cluster = Cluster(name=cluster_name)
+                storage.create_cluster(cluster)
+                console.print(f"✅ Created new cluster [bold blue]{cluster_name}[/]")
+            
+            storage.add_to_cluster(cluster_name, name)
+            console.print(f"✅ Added to cluster [bold blue]{cluster_name}[/]")
         
     except ValueError as e:
         console.print(f"[red]Error:[/] {e}")
@@ -281,6 +297,11 @@ def add_to_cluster(cluster_name: str, participant_name: str):
 @cluster_group.command("list")
 def list_clusters():
     """Show all clusters and their members."""
+    _display_clusters()
+
+
+def _display_clusters():
+    """Internal helper to display clusters."""
     clusters = storage.list_clusters()
     
     if not clusters:
@@ -303,6 +324,12 @@ def list_clusters():
             border_style="blue"
         )
         console.print(panel)
+
+
+@cli.command("clusters")
+def quick_list_clusters():
+    """Quick shortcut to view all clusters (same as 'santa cluster list')."""
+    _display_clusters()
 
 
 @cluster_group.command("remove")

@@ -139,6 +139,153 @@ def create_email_html(receiver_name: str, gift_limit: int = 25, verification_cod
 """
 
 
+def create_kid_email_html(child_name: str, receiver_name: str, gift_limit: int = 25, verification_code: str = "") -> str:
+    """Create festive HTML email content for parent of a kid participant.
+    
+    This email is sent to the parent and shows their child's assignment.
+    """
+    return f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a472a 0%, #2d5a3f 100%);
+            margin: 0;
+            padding: 40px 20px;
+        }}
+        .container {{
+            max-width: 500px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }}
+        .header {{
+            text-align: center;
+            margin-bottom: 30px;
+        }}
+        .snowflakes {{
+            font-size: 40px;
+            letter-spacing: 10px;
+        }}
+        h1 {{
+            color: #c41e3a;
+            margin: 20px 0 10px;
+            font-size: 28px;
+        }}
+        .child-banner {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }}
+        .child-banner .child-name {{
+            font-size: 24px;
+            font-weight: bold;
+        }}
+        .gift-box {{
+            background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 30px 0;
+        }}
+        .gift-box .label {{
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }}
+        .gift-box .name {{
+            font-size: 32px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }}
+        .info-box {{
+            background: #f8f9fa;
+            border: 2px solid #28a745;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 20px 0;
+        }}
+        .info-box .limit {{
+            font-size: 24px;
+            font-weight: bold;
+            color: #28a745;
+        }}
+        .verification {{
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+        }}
+        .verification .code {{
+            font-size: 28px;
+            font-weight: bold;
+            font-family: monospace;
+            color: #856404;
+            letter-spacing: 4px;
+        }}
+        .footer {{
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 30px;
+        }}
+        .tree {{
+            font-size: 50px;
+            text-align: center;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="snowflakes">❄️ ⛄ ❄️</div>
+            <h1>🎄 Secret Santa 🎄</h1>
+            <p>Your child has been matched!</p>
+        </div>
+        
+        <div class="child-banner">
+            <div>👶 Your child</div>
+            <div class="child-name">{child_name}</div>
+        </div>
+        
+        <div class="gift-box">
+            <div class="label">is buying a gift for:</div>
+            <div class="name">🎁 {receiver_name} 🎁</div>
+        </div>
+        
+        <div class="info-box">
+            <div>💰 Gift Limit</div>
+            <div class="limit">${gift_limit}</div>
+        </div>
+        
+        <div class="verification">
+            <div>🔐 Verification Code</div>
+            <div class="code">{verification_code}</div>
+            <div style="font-size: 12px; color: #666; margin-top: 10px;">Use this code to verify the assignment is correct</div>
+        </div>
+        
+        <div class="footer">
+            <div class="tree">🎄</div>
+            <p>Help {child_name} keep it a secret! 🤫</p>
+            <p>Happy Holidays!</p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+
+
 def send_assignment_email(
     assignment: Assignment,
     config: Config,
@@ -164,12 +311,22 @@ def send_assignment_email(
     if not config.sender_email:
         raise EmailError("Sender email not configured. Run: santa config --sender-email YOUR_EMAIL")
     
-    html_content = create_email_html(
-        assignment.receiver_name,
-        gift_limit=config.gift_limit,
-        verification_code=assignment.verification_code
-    )
-    subject = "🎄 Your Secret Santa Assignment!"
+    # Use kid-specific email template if this is a kid assignment
+    if assignment.is_kid:
+        html_content = create_kid_email_html(
+            child_name=assignment.giver_name,
+            receiver_name=assignment.receiver_name,
+            gift_limit=config.gift_limit,
+            verification_code=assignment.verification_code
+        )
+        subject = f"🎄 {assignment.giver_name}'s Secret Santa Assignment!"
+    else:
+        html_content = create_email_html(
+            assignment.receiver_name,
+            gift_limit=config.gift_limit,
+            verification_code=assignment.verification_code
+        )
+        subject = "🎄 Your Secret Santa Assignment!"
     
     to_list = [{"email": assignment.giver_email, "name": assignment.giver_name}]
     cc_list = []

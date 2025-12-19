@@ -66,3 +66,100 @@ class TestEmailContent:
         html = create_email_html("Test")
         
         assert "$25" in html
+
+
+class TestKidParentEmail:
+    """Tests for kid assignment emails sent to parents."""
+    
+    def test_kid_email_mentions_child_name(self):
+        """Kid email should mention the child's name."""
+        from secret_santa.email import create_kid_email_html
+        
+        html = create_kid_email_html(
+            child_name="Tommy",
+            receiver_name="Alice"
+        )
+        
+        assert "Tommy" in html
+    
+    def test_kid_email_contains_receiver(self):
+        """Kid email should contain the receiver's name."""
+        from secret_santa.email import create_kid_email_html
+        
+        html = create_kid_email_html(
+            child_name="Tommy",
+            receiver_name="Alice"
+        )
+        
+        assert "Alice" in html
+    
+    def test_kid_email_shows_parent_context(self):
+        """Kid email should indicate it's for a parent about their child."""
+        from secret_santa.email import create_kid_email_html
+        
+        html = create_kid_email_html(
+            child_name="Tommy",
+            receiver_name="Alice"
+        )
+        
+        assert "Your child" in html or "your child" in html.lower()
+    
+    def test_kid_email_has_child_banner(self):
+        """Kid email should have a child banner section."""
+        from secret_santa.email import create_kid_email_html
+        
+        html = create_kid_email_html(
+            child_name="Tommy",
+            receiver_name="Alice"
+        )
+        
+        assert "child-banner" in html
+    
+    def test_kid_email_contains_gift_limit(self):
+        """Kid email should contain the gift limit."""
+        from secret_santa.email import create_kid_email_html
+        
+        html = create_kid_email_html(
+            child_name="Tommy",
+            receiver_name="Alice",
+            gift_limit=30
+        )
+        
+        assert "$30" in html
+    
+    def test_kid_email_contains_verification_code(self):
+        """Kid email should contain the verification code."""
+        from secret_santa.email import create_kid_email_html
+        
+        html = create_kid_email_html(
+            child_name="Tommy",
+            receiver_name="Alice",
+            verification_code="AB12"
+        )
+        
+        assert "AB12" in html
+    
+    def test_kid_email_personalized_footer(self):
+        """Kid email footer should mention helping the child keep it a secret."""
+        from secret_santa.email import create_kid_email_html
+        
+        html = create_kid_email_html(
+            child_name="Tommy",
+            receiver_name="Alice"
+        )
+        
+        assert "Help Tommy keep it a secret" in html
+    
+    def test_kid_email_is_valid_html(self):
+        """Kid email should be valid HTML with proper structure."""
+        from secret_santa.email import create_kid_email_html
+        
+        html = create_kid_email_html(
+            child_name="Tommy",
+            receiver_name="Alice"
+        )
+        
+        assert "<!DOCTYPE html>" in html
+        assert "<html>" in html
+        assert "</html>" in html
+

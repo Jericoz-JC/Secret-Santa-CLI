@@ -166,6 +166,7 @@ def _try_assign(
             receiver_email=receiver.email,
             parent_email=giver.parent_email,
             verification_code=generate_verification_code(giver.id, receiver.id),
+            is_kid=giver.is_kid,
         ))
     
     return assignments
