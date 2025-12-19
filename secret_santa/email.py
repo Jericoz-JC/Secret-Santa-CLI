@@ -12,7 +12,7 @@ class EmailError(Exception):
     pass
 
 
-def create_email_html(receiver_name: str) -> str:
+def create_email_html(receiver_name: str, gift_limit: int = 25, verification_code: str = "") -> str:
     """Create festive HTML email content."""
     return f"""
 <!DOCTYPE html>
@@ -64,6 +64,34 @@ def create_email_html(receiver_name: str) -> str:
             font-weight: bold;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }}
+        .info-box {{
+            background: #f8f9fa;
+            border: 2px solid #28a745;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 20px 0;
+        }}
+        .info-box .limit {{
+            font-size: 24px;
+            font-weight: bold;
+            color: #28a745;
+        }}
+        .verification {{
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+        }}
+        .verification .code {{
+            font-size: 28px;
+            font-weight: bold;
+            font-family: monospace;
+            color: #856404;
+            letter-spacing: 4px;
+        }}
         .footer {{
             text-align: center;
             color: #666;
@@ -87,6 +115,17 @@ def create_email_html(receiver_name: str) -> str:
         <div class="gift-box">
             <div class="label">You are buying a gift for:</div>
             <div class="name">🎁 {receiver_name} 🎁</div>
+        </div>
+        
+        <div class="info-box">
+            <div>💰 Gift Limit</div>
+            <div class="limit">${gift_limit}</div>
+        </div>
+        
+        <div class="verification">
+            <div>🔐 Your Verification Code</div>
+            <div class="code">{verification_code}</div>
+            <div style="font-size: 12px; color: #666; margin-top: 10px;">Use this code to verify your assignment is correct</div>
         </div>
         
         <div class="footer">
@@ -125,7 +164,11 @@ def send_assignment_email(
     if not config.sender_email:
         raise EmailError("Sender email not configured. Run: santa config --sender-email YOUR_EMAIL")
     
-    html_content = create_email_html(assignment.receiver_name)
+    html_content = create_email_html(
+        assignment.receiver_name,
+        gift_limit=config.gift_limit,
+        verification_code=assignment.verification_code
+    )
     subject = "🎄 Your Secret Santa Assignment!"
     
     to_list = [{"email": assignment.giver_email, "name": assignment.giver_name}]

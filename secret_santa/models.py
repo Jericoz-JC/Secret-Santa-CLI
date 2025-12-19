@@ -32,6 +32,7 @@ class Assignment(BaseModel):
     receiver_email: EmailStr
     parent_email: Optional[EmailStr] = None
     email_sent: bool = False
+    verification_code: str = ""  # 4-char code for participant to verify their match
 
 
 class Config(BaseModel):
@@ -39,6 +40,7 @@ class Config(BaseModel):
     brevo_api_key: Optional[str] = None
     sender_email: Optional[EmailStr] = None
     sender_name: str = "Secret Santa"
+    gift_limit: int = 25  # Dollar limit for gifts
 
 
 class SecretSantaData(BaseModel):

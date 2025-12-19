@@ -361,15 +361,22 @@ def assign(force: bool, separate_kids: bool):
         
         console.print(f"\n[bold green]🎉 Assignments generated![/] ({mode_msg})\n")
         
+        # Show masked table - operator cannot see who matches with whom
         table = Table(show_header=True, header_style="bold magenta")
-        table.add_column("Giver", style="cyan")
-        table.add_column("→", justify="center", style="dim")
-        table.add_column("Receiver", style="green")
+        table.add_column("✓", justify="center", style="green", width=3)
+        table.add_column("Participant", style="cyan")
+        table.add_column("Verification Code", style="yellow", justify="center")
         
         for a in assignments:
-            table.add_row(a.giver_name, "🎁", a.receiver_name)
+            table.add_row("✓", a.giver_name, f"[bold]{a.verification_code}[/]")
         
         console.print(table)
+        console.print("\n[dim]🔒 Recipient names are hidden to protect the secret![/]")
+        console.print("[dim]Each participant will receive an email with their match and verification code.[/]")
+        
+        # Show gift limit reminder
+        config = storage.get_config()
+        console.print(f"\n[bold yellow]💰 Gift Limit: ${config.gift_limit}[/]")
         console.print("\n[dim]Run 'santa send' to email everyone their assignments.[/]")
         
     except MatcherError as e:

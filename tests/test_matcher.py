@@ -4,7 +4,7 @@ import pytest
 from uuid import uuid4
 
 from secret_santa.models import Participant, Cluster, SecretSantaData
-from secret_santa.matcher import create_assignments, MatcherError, _same_cluster
+from secret_santa.matcher import create_assignments, MatcherError, _same_cluster, generate_verification_code
 
 
 class MockStorage:
@@ -435,3 +435,100 @@ class TestRandomMatching:
                     assert a.receiver_id not in [kid1.id, adult1.id]
 
 
+class TestVerificationCode:
+    """Tests for verification code generation."""
+    
+    def test_verification_code_is_deterministic(self):
+        """Same giver/receiver pair should always produce the same code."""
+        giver_id = uuid4()
+        receiver_id = uuid4()
+        
+        code1 = generate_verification_code(giver_id, receiver_id)
+        code2 = generate_verification_code(giver_id, receiver_id)
+        
+        assert code1 == code2
+    
+    def test_verification_code_is_4_characters(self):
+        """Verification codes should be exactly 4 characters."""
+        giver_id = uuid4()
+        receiver_id = uuid4()
+        
+        code = generate_verification_code(giver_id, receiver_id)
+        
+        assert len(code) == 4
+    
+    def test_verification_code_is_uppercase(self):
+        """Verification codes should be uppercase."""
+        giver_id = uuid4()
+        receiver_id = uuid4()
+        
+        code = generate_verification_code(giver_id, receiver_id)
+        
+        assert code == code.upper()
+    
+    def test_different_pairs_different_codes(self):
+        """Different giver/receiver pairs should have different codes."""
+        id1, id2, id3 = uuid4(), uuid4(), uuid4()
+        
+        code1 = generate_verification_code(id1, id2)
+        code2 = generate_verification_code(id1, id3)
+        code3 = generate_verification_code(id2, id1)
+        
+        # All should be different
+        assert code1 != code2
+        assert code1 != code3
+        assert code2 != code3
+    
+    def test_order_matters(self):
+        """Swapping giver and receiver should produce different codes."""
+        id1, id2 = uuid4(), uuid4()
+        
+        code1 = generate_verification_code(id1, id2)
+        code2 = generate_verification_code(id2, id1)
+        
+        assert code1 != code2
+
+
+class TestAssignmentHasVerificationCode:
+    """Tests for verification codes in assignments."""
+    
+    def test_all_assignments_have_verification_codes(self):
+        """Every assignment should have a non-empty verification code."""
+        participants = [
+            Participant(name=f"Person{i}", email=f"p{i}@test.com")
+            for i in range(5)
+        ]
+        storage = MockStorage(participants)
+        
+        assignments = create_assignments(storage)
+        
+        for a in assignments:
+            assert a.verification_code, f"Assignment for {a.giver_name} missing verification code"
+            assert len(a.verification_code) == 4
+    
+    def test_verification_codes_are_unique_per_assignment(self):
+        """Each assignment should have a unique verification code."""
+        participants = [
+            Participant(name=f"Person{i}", email=f"p{i}@test.com")
+            for i in range(10)
+        ]
+        storage = MockStorage(participants)
+        
+        assignments = create_assignments(storage)
+        codes = [a.verification_code for a in assignments]
+        
+        # All codes should be unique
+        assert len(codes) == len(set(codes)), "Some verification codes are duplicated"
+    
+    def test_verification_code_matches_expected(self):
+        """Verification code should match what generate_verification_code produces."""
+        alice = Participant(name="Alice", email="alice@test.com")
+        bob = Participant(name="Bob", email="bob@test.com")
+        
+        storage = MockStorage([alice, bob])
+        
+        assignments = create_assignments(storage)
+        
+        for a in assignments:
+            expected = generate_verification_code(a.giver_id, a.receiver_id)
+            assert a.verification_code == expected

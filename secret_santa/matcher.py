@@ -1,10 +1,23 @@
 """Matchmaking algorithm for Secret Santa assignments."""
 
+import hashlib
 import random
 from uuid import UUID
 
 from .models import Participant, Assignment
 from .storage import Storage
+
+
+def generate_verification_code(giver_id: UUID, receiver_id: UUID) -> str:
+    """
+    Generate a 4-character verification code from giver and receiver IDs.
+    
+    This code is deterministic and can be used by participants to verify
+    their assignment matches what they received in their email.
+    """
+    combined = f"{giver_id}:{receiver_id}"
+    hash_digest = hashlib.sha256(combined.encode()).hexdigest()
+    return hash_digest[:4].upper()
 
 
 class MatcherError(Exception):
@@ -152,6 +165,7 @@ def _try_assign(
             giver_email=giver.email,
             receiver_email=receiver.email,
             parent_email=giver.parent_email,
+            verification_code=generate_verification_code(giver.id, receiver.id),
         ))
     
     return assignments
