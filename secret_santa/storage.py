@@ -70,10 +70,12 @@ class Storage:
     def add_participant(self, participant: Participant) -> Participant:
         """Add a new participant to the store."""
         data = self.load()
-        # Check for duplicate email
+        # Check for duplicate email - but allow kids to share parent email
         for p in data.participants:
             if p.email == participant.email:
-                raise ValueError(f"Participant with email {participant.email} already exists")
+                # Allow if either is a kid (kids use parent email)
+                if not p.is_kid and not participant.is_kid:
+                    raise ValueError(f"Participant with email {participant.email} already exists")
         data.participants.append(participant)
         self.save()
         return participant
