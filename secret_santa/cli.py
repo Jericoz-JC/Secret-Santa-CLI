@@ -464,6 +464,48 @@ def send(dry_run: bool):
         raise SystemExit(1)
 
 
+@cli.command("lookup")
+@click.argument("name")
+@click.confirmation_option(prompt="⚠️  This will reveal a secret assignment! Are you sure?")
+def lookup_assignment(name: str):
+    """[ADMIN] Look up who a specific person is assigned to buy for.
+    
+    This reveals the secret assignment - use only if absolutely necessary!
+    
+    Example: santa lookup "Alice"
+    """
+    assignments = storage.get_assignments()
+    
+    if not assignments:
+        console.print("[yellow]No assignments yet.[/] Run 'santa assign' first.")
+        return
+    
+    # Search for the person (case-insensitive)
+    name_lower = name.lower()
+    found = None
+    
+    for a in assignments:
+        if a.giver_name.lower() == name_lower:
+            found = a
+            break
+    
+    if not found:
+        console.print(f"[red]Error:[/] No assignment found for '{name}'")
+        console.print("[dim]Make sure the name matches exactly (case-insensitive).[/]")
+        return
+    
+    # Display the assignment
+    console.print()
+    console.print(Panel(
+        f"[bold cyan]{found.giver_name}[/] → [bold green]{found.receiver_name}[/]\n\n"
+        f"[dim]Verification Code:[/] [bold yellow]{found.verification_code}[/]\n"
+        f"[dim]Email sent:[/] {'✅ Yes' if found.email_sent else '❌ No'}",
+        title="🔓 [bold red]SECRET REVEALED[/] 🔓",
+        border_style="red"
+    ))
+    console.print()
+
+
 # ============================================================================
 # Config Command
 # ============================================================================
