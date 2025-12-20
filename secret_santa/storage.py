@@ -217,8 +217,30 @@ class Storage:
 
     # Config operations
     def get_config(self) -> Config:
-        """Get application config."""
-        return self.load().config
+        """Get application config.
+        
+        If config is not set in storage, tries to load from .env file.
+        Environment variables: BREVO_API_KEY, SENDER_EMAIL, SENDER_NAME
+        """
+        import os
+        from dotenv import load_dotenv
+        
+        # Load .env file from current directory or project root
+        load_dotenv()
+        
+        config = self.load().config
+        
+        # Fallback to environment variables if not set in storage
+        if not config.brevo_api_key:
+            config.brevo_api_key = os.getenv("BREVO_API_KEY")
+        if not config.sender_email:
+            config.sender_email = os.getenv("SENDER_EMAIL")
+        if config.sender_name == "Secret Santa":  # Default value
+            env_name = os.getenv("SENDER_NAME")
+            if env_name:
+                config.sender_name = env_name
+        
+        return config
 
     def save_config(self, config: Config) -> None:
         """Save application config."""
